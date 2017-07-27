@@ -132,7 +132,7 @@
           <view class="meeting-date"><view>{{booking.date}}</view><view>{{booking.start_time + '-' + booking.end_time}}</view></view>
         </view>
         <view class="flex-opt">
-          <view class="flex-set" @tap="reviewBooking({{booking.id}})" >详情</view>
+          <view class="flex-set" @tap="reviewBooking({{booking.id}})">详情</view>
           <view class="flex-set gray" wx:if"{{booking.isBefore}}" @tap="cancelBooking({{booking.id}})" >取消</view>
         </view>
       </view>
@@ -141,6 +141,7 @@
 </template>
 <script>
   import wepy from 'wepy'
+
   export default class BookingList extends wepy.component {
     props = {
       bookingList: {

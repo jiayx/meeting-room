@@ -73,6 +73,9 @@
       margin: 0;
     }
 
+    .disable {
+      background: #ddd;
+    }
     .used {
       background: #ea1544;
     }
@@ -97,7 +100,7 @@
         <view class="row" wx:for="{{meetingRooms}}" wx:key="id" wx:for-item="room">
           <view class="col name">{{room.name}}</view>
           <view wx:for="{{room.times}}" wx:key="id" wx:for-item="time" class="col"
-            :class="{used: time.used, selected: meetingRoom.id === room.id && selected[time.id]}"
+            :class="{disable: todayDate === selectedDate && nowTime >= time.end, used: time.used, selected: meetingRoom.id === room.id && selected[time.id]}"
             @tap="selectTime({{time}}, {{room}})"
           ></view>
         </view>
@@ -109,6 +112,7 @@
 <script>
   import wepy from 'wepy'
   import api from '../api'
+  import fecha from 'fecha'
   import Popup from '../components/popup'
 
   export default class BookingTable extends wepy.component {
@@ -117,6 +121,9 @@
         type: Object
       },
       maxHeight: {
+        type: String
+      },
+      selectedDate: {
         type: String
       }
     }
@@ -129,7 +136,9 @@
       timeListShow: [],
       timeList: [],
       selected: {},
-      meetingRoom: {}
+      meetingRoom: {},
+      todayDate: fecha.format(new Date(), 'YYYY-MM-DD'),
+      nowTime: fecha.format(new Date(), 'HH:mm:ss')
     }
 
     watch = {
@@ -146,6 +155,11 @@
         this.$emit('time-click', time, room)
 
         if (time.used) {
+          return
+        }
+
+        if (this.todayDate === this.selectedDate && this.nowTime >= time.end) {
+          this.$invoke('popup', 'show', '时间已过，不可预订')
           return
         }
 

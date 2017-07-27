@@ -79,15 +79,61 @@
     }
   }
 
-  .booking-confirm {
+  .booking-preview {
     position: fixed;
-    z-index: 1000;
+    z-index: 500;
     top: 0;
     right: 0;
     left: 0;
     bottom: 0;
+    display: flex;
     background: rgba(40, 40, 40, 0.75);
+    justify-content: center;
+    align-items: center;
 
+    .booking {
+      height: 300px;
+      width: 250px;
+      background: #fff;
+      font-size: 16px;
+
+      .close {
+        text-align: right;
+        padding: 4px 8px;
+        border-bottom: 1px solid #ddd;
+        font-size: 16px;
+        height: 20px;
+        line-height: 20px;
+      }
+
+      .booking-info {
+        padding: 0 8px;
+      }
+
+      .booking-info-item {
+        display: flex;
+        align-content: center;
+        border-bottom: 1px solid #ddd;
+        padding: 8px 0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .left {
+          flex: 1;
+          text-align: right;
+        }
+        .right {
+          flex: 2;
+          padding-left: 8px;
+
+          text {
+            font-weight: bold;
+          }
+        }
+      }
+    }
   }
   .hidden {
     display: none;
@@ -98,6 +144,9 @@
     border: 1px solid #ddd;
   }
 
+  .disable {
+    background: #ddd;
+  }
   .used {
     background: #ea1544;
   }
@@ -114,7 +163,13 @@
       <view class="location">楼号：{{locationName}}</view>
     </view>
     <view class="meeting-room">
-      <bookingTable :meetingRooms.sync="meetingRooms" :maxHeight.sync="maxHeight" @times-selected.user="selectTime" @time-click.user="clickTime"></bookingTable>
+      <bookingTable
+        :meetingRooms.sync="meetingRooms"
+        :maxHeight.sync="maxHeight"
+        :selectedDate.sync="date"
+        @times-selected.user="selectTime"
+        @time-click.user="clickTime"
+      ></bookingTable>
     </view>
 
     <view class="bottom">
@@ -137,17 +192,54 @@
             <view class="prompt-block-color my-selected"></view>
             <view class="">当前选中</view>
           </view>
+          <view class="prompt-block">
+            <view class="prompt-block-color disable"></view>
+            <view class="">不可预订</view>
+          </view>
         </view>
       </view>
       <view class="booking-btn" @tap="booking">确认选择</view>
     </view>
 
+    <!-- 预订预览浮层 -->
+    <view class="booking-preview {{previewHidden ? 'hidden' : ''}}" @tap="closePreview">
+      <view class="booking" @tap.stop="stopBubble">
+        <view class="close" @tap="closePreview">X</view>
+        <view class="booking-info">
+          <view class="booking-info-item">
+            <view class="left">会议主题</view>
+            <view class="right">{{booking.subject}}</view>
+          </view>
+          <view class="booking-info-item">
+            <view class="left">开始时间</view>
+            <view class="right">{{booking.start_time}}</view>
+          </view>
+          <view class="booking-info-item">
+            <view class="left">结束时间</view>
+            <view class="right">{{booking.end_time}}</view>
+          </view>
 
-    <!-- <view class="booking-confirm" :class="{hidden: hidden}">
-      <view>
-
+          <view wx:if="{{userLoading}}" class="booking-info-item">用户信息加载中...</view>
+          <view wx:else>
+            <view class="booking-info-item">
+              <view class="left">姓名</view>
+              <view class="right">{{user.name}}</view>
+            </view>
+            <view class="booking-info-item">
+              <view class="left">万信号</view>
+              <view class="right">{{user.wanxin}}</view>
+            </view>
+            <view class="booking-info-item">
+              <view class="left">手机号</view>
+              <view class="right" @tap="callPhone({{user.mobile}})">
+                <text>{{user.mobile}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
-    </view> -->
+    </view>
+    <!-- 预订预览浮层 -->
   </view>
   <popup></popup>
 </template>
@@ -178,12 +270,12 @@
       bookings: [],       // 选中的的时间段
       meetingRoom: {},    // 选中的会议室
       meetingRooms: [],   // 查询到的会议室列表
-      confirmHidden: true,
-      params: {},
+      params: {},         // 上个页面传来的参数
+      maxHeight: '400px', // scroll-view 高度
       booking: {},        // 查看的某一条预订数据
-      maxHeight: '400px',
       user: {},
-      userLoading: true
+      userLoading: true,
+      previewHidden: true
     }
 
     methods = {
@@ -196,18 +288,19 @@
       },
 
       async clickTime(time, meetingRoom) {
-        return
         if (time && time.booking_id) {
-          let booking = null
+          this.previewHidden = false
+          // let booking = null
           meetingRoom.bookings.forEach(item => {
             if (item.id === time.booking_id) {
-              booking = item
+              this.booking = item
             }
           })
+          this.$apply()
 
-          if (booking) {
-            // TODO 这个地方采用加密后的 user_id 来做
-            const res = await api.getUserInfo({id: booking.user_id})
+          if (this.booking.encrypted_user_id) {
+            // 这个地方采用加密后的 user_id 来查
+            const res = await api.getUserInfo({id: this.booking.encrypted_user_id})
             this.userLoading = false
             if (res.code !== '200') {
               this.toastShow('获取预订信息失败，请重试')
@@ -220,6 +313,30 @@
         }
       },
 
+      // 打电话
+      async callPhone(phone) {
+        console.log(phone)
+
+        try {
+          await wepy.makePhoneCall({phoneNumber: phone})
+          this.toastShow('拨打 ' + phone + ' 成功')
+        } catch (e) {
+          this.toastShow('拨打 ' + phone + ' 失败')
+        }
+      },
+
+      // 关闭预览窗口 同时重置信息
+      closePreview() {
+        this.previewHidden = true
+        this.$apply()
+        this.resetBookingPreview()
+      },
+
+      // 仅仅用来阻止事件冒泡
+      stopBubble() {
+      },
+
+      // 确认预订
       booking() {
         if (!this.meetingRoom.id || this.bookings.length < 1) {
           this.toastShow('请选择要预定的会议室')
@@ -235,6 +352,14 @@
           url: `detailBooking?date=${this.date}&meeting_room_id=${this.meetingRoom.id}&start_time=${startTime}&end_time=${endTime}`
         })
       }
+    }
+
+    resetBookingPreview() {
+      this.booking = {}
+      this.userLoading = true
+      this.user = {}
+
+      this.$apply()
     }
 
     async getMettingRooms(params) {

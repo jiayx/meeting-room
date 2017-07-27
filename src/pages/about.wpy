@@ -23,7 +23,7 @@
 
     data = {
       title: '万达会议室预订',
-      version: '0.9.0'
+      version: '0.9.1'
     }
   }
 </script>

@@ -55,7 +55,7 @@
 
 <template>
   <view class="container">
-    <view class="title">绑定万信号</view>
+    <!-- <view class="title">绑定万信号</view> -->
     <form bindsubmit="formSubmit">
       <view class="section">
         <view class="flex-wrp">

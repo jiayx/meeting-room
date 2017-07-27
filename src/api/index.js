@@ -54,7 +54,7 @@ const login = params => wxRequest(baseUrl + '/user/login', {
 const bind = params => wxRequest(baseUrl + '/user/bind', {
   data: params,
   method: 'POST'
-})
+}, '绑定中...')
 
 const meetingRoom = params => wxRequest(baseUrl + '/meeting_rooms', {
   data: params,
