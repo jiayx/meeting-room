@@ -83,7 +83,7 @@
   }
   .flex-opt view {
     width: 50%;
-    float: left;
+    float: right;
     color: #3597f2;
     font-size: 15px;
   }
@@ -119,6 +119,13 @@
     display: inline-block;
     margin: 0 30px 0 0;
   }
+  .defaultText {
+    height: 100vh;
+    line-height: 100vh;
+    font-size: 18px;
+    color: #999;
+    text-align: center;
+  }
 </style>
 <template>
   <!-- <view class="header">
@@ -136,6 +143,7 @@
           <view class="flex-set gray" wx:if"{{booking.isBefore}}" @tap="cancelBooking({{booking.id}})" >取消</view>
         </view>
       </view>
+      <view class="defaultText" wx:if"{{bookingList.length === 0}}">您还没有预订会议室</view>
     </view>
   </scroll-view>
 </template>
