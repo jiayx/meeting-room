@@ -1,0 +1,116 @@
+<style lang="less">
+  .userinfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .userinfo-avatar {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+  }
+
+  .userinfo-nickname {
+    color: #aaa;
+  }
+
+  .container, .meeting-room {
+    height: 100%;
+  }
+</style>
+<template>
+  <view class="container">
+    <view class="meeting-room">
+      <bookingList :bookingList.sync="bookingList"></bookingList>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import api from '../api'
+  import bookingList from '../components/bookingList'
+
+  export default class Index extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的预订'
+    }
+    components = {
+      bookingList: bookingList
+    }
+
+    data = {
+      bookingList: [],
+      offset: 0,
+      limmit: 20,
+      allData: false
+    }
+
+    computed = {
+      now () {
+        return +new Date()
+      }
+    }
+
+    events = {
+      'index-emit': (...args) => {
+        let $event = args[args.length - 1]
+        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
+      }
+    }
+    async getBookingList() {
+      let bookingList = await this.$parent.getBookingList(this.offset * this.limmit, this.limmit)
+      if (bookingList.length === 0 || bookingList.length < this.limmit) {
+        this.allData = true
+      }
+      for (let i = 0; i < bookingList.length; i++) {
+        if (new Date((bookingList[i].date + ' ' + bookingList[i].start_time).replace(/\s+/g, 'T').concat('.000+08:00')).getTime() > new Date().getTime()) {
+          bookingList[i].isBefore = true
+        } else {
+          bookingList[i].isBefore = false
+        }
+        bookingList[i].start_time = bookingList[i].start_time.substr(0, 5)
+        bookingList[i].end_time = bookingList[i].end_time.substr(0, 5)
+        this.bookingList.push(bookingList[i])
+      }
+      this.offset += 1
+      this.$apply()
+    }
+    async onShow() {
+      this.allData = false
+      this.offset = 0
+      this.bookingList = []
+      this.getBookingList()
+    }
+    async onReachBottom() {
+      if (!this.allData) {
+        this.getBookingList()
+      }
+    }
+    async cancelBooking(id) {
+      const res = await api.cancelBook({
+        id: id
+      })
+
+      if (res.code === '200') {
+        this.bookingList.splice(this.bookingList.findIndex(function(value) { return value.id === id }), 1)
+        wx.showToast({
+          title: '成功',
+          icon: 'success',
+          duration: 1000
+        })
+        this.$apply()
+      } else {
+        wx.showModal({
+          title: '错误',
+          content: res.message,
+          showCancel: false,
+          success: function(res) {
+          }
+        })
+      }
+    };
+  }
+</script>

@@ -1,0 +1,146 @@
+<style lang="less">
+  .title {
+    margin: 10px 0 0;
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .header {
+    text-align: center;
+    margin: 10px;
+  }
+  .flex-wrp {
+    min-height: 42px;
+    font-size:12px;
+    display:flex;
+    background-color: #FFFFFF;
+    border-bottom: 2px solid #f7f8fa;
+
+    .flex-item {
+      flex: 1;
+      min-height: 32px;
+      text-align: right;
+      margin: 5px 5px;
+      line-height: 32px;
+      vertical-align: middle;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .flex-detail {
+      flex: 3;
+      height: 32px;
+      margin: 5px;
+      line-height: 32px;
+      vertical-align: middle;
+      input {
+        height: 32px;
+        font-size: 14px;
+        color: #333;
+      }
+    }
+  }
+
+  .btn {
+    width: 100%;
+    height: 40px;
+    font-size: 16px;
+    border-radius: 2px;
+  }
+  .btn-container {
+    padding: 20px 10rpx 0;
+    background: transparent;
+  }
+</style>
+
+<template>
+  <view class="container">
+    <view class="title">绑定万信号</view>
+    <form bindsubmit="formSubmit">
+      <view class="section">
+        <view class="flex-wrp">
+          <view class="flex-item">万信号</view>
+          <view class="flex-detail">
+            <input type="text" name="wanxin" placeholder="请输入万信号" placeholder-style="color: #ccc;" value="{{username}}" />
+          </view>
+        </view>
+        <view class="flex-wrp">
+          <view class="flex-item">密码</view>
+          <view class="flex-detail">
+            <input type="text" password="true" name="password" placeholder="请输入密码" placeholder-style="color: #ccc;" value="{{password}}" />
+          </view>
+        </view>
+        <view class="flex-wrp btn-container">
+          <button class="btn" formType="submit" type="primary">提交</button>
+        </view>
+      </view>
+    </form>
+  </view>
+
+  <popup></popup>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import storage from '../utils/storage'
+  import api from '../api'
+  import Popup from '../components/popup'
+
+  export default class Index extends wepy.page {
+    config = {
+      navigationBarTitleText: '绑定万信号',
+      enablePullDownRefresh: false
+    }
+    components = {
+      popup: Popup
+    }
+
+    data = {
+      wanxin: '',
+      password: ''
+    }
+
+    methods = {
+      async formSubmit (e) {
+        const data = e.detail.value
+        const wanxin = data.wanxin.trim()
+        const password = data.password.trim()
+
+        if (!wanxin) {
+          this.toastShow('请输入万信号')
+          return
+        }
+
+        if (!password) {
+          this.toastShow('请输入密码')
+          return
+        }
+
+        try {
+          const res = await api.bind({
+            wanxin,
+            password
+          })
+          console.log(res)
+
+          if (res.code !== '200') {
+            this.toastShow(res.message)
+            return
+          }
+
+          await storage.set('userInfo', res.data)
+
+          wepy.switchTab({
+            url: 'home'
+          })
+        } catch (e) {
+          this.toastShow(e)
+        }
+      }
+    }
+
+    toastShow(message) {
+      this.$invoke('popup', 'show', message)
+    }
+  }
+</script>

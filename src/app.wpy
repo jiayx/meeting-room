@@ -1,0 +1,183 @@
+<style lang="less">
+page {
+  color: #333;
+  background-color: #f7f8fa;
+  font-family: -apple-system-font,Helvetica Neue,Helvetica,sans-serif;
+}
+</style>
+
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+import log from './utils/log'
+import storage from './utils/storage'
+import api from './api'
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/home',
+      'pages/me',
+      'pages/booking',
+      'pages/detailBooking',
+      'pages/myBookings',
+      'pages/bind',
+      'pages/about',
+      'pages/feedback'
+    ],
+    window: {
+      navigationBarTextStyle: 'black',
+      navigationBarTitleText: 'WeChat',
+      navigationBarBackgroundColor: '#ffffff',
+      backgroundColor: '#f7f8fa',
+      enablePullDownRefresh: true
+    },
+    tabBar: {
+      color: '#B0B0B0',
+      selectedColor: '#1AAD16',
+      backgroundColor: '#ffffff',
+      borderStyle: 'black',
+
+      list: [{
+        pagePath: 'pages/home',
+        text: '预订',
+        iconPath: '/images/booking.png',
+        selectedIconPath: '/images/booking-selected.png'
+      }, {
+        pagePath: 'pages/me',
+        text: '我的',
+        iconPath: '/images/me.png',
+        selectedIconPath: '/images/me-selected.png'
+      }]
+    },
+    enablePullDownRefresh: false
+  }
+
+  globalData = {
+    code: '',
+    userInfo: null,
+    token: '',
+    loaded: false
+  }
+
+  constructor () {
+    super()
+    this.use('requestfix')
+    this.use('promisify')
+  }
+
+  async onLaunch() {
+    this.globalData.token = await storage.get('token', '')
+    this.globalData.userInfo = await storage.get('userInfo', null)
+  }
+
+  async clear() {
+    this.globalData.userInfo = null
+    await storage.set('userInfo', null)
+    this.globalData.token = null
+    await storage.set('token', null)
+  }
+
+  async checkLogin() {
+    try {
+      await wepy.checkSession()
+    } catch (e) {
+      log.debug(e)
+      await this.clear()
+    }
+
+    const token = await storage.get('token')
+
+    if (token) {
+      return await storage.get('userInfo')
+    } else {
+      return await this.login()
+    }
+  }
+
+  async getBookingList(offset, limit) {
+    const res = await api.bookingList({
+      offset: offset,
+      limit: limit
+    })
+    return res.data
+  }
+
+  async login() {
+    wepy.showToast({
+      title: '登录中...',
+      icon: 'loading'
+    })
+
+    // 必须先 login 获取 code 再 getUserInfo 顺序不能乱
+    const code = await this.code()
+    const weChatUserInfo = await this.getUserInfo()
+
+    if (code && weChatUserInfo) {
+      const res = await api.login({
+        code: code,
+        encrypted_data: weChatUserInfo.encryptedData,
+        iv: weChatUserInfo.iv
+      })
+
+      if (res.code !== '200') {
+        wepy.showToast({
+          title: '登录失败请重试',
+          icon: 'loading'
+        })
+      } else {
+        await storage.set('token', res.data.token)
+        await storage.set('userInfo', res.data.user)
+      }
+
+      wepy.hideToast()
+
+      return res.data.user
+    } else {
+      console.log('登录失败')
+
+      wepy.hideToast()
+      return null
+    }
+  }
+
+  async code() {
+    try {
+      const res = await wepy.login()
+      return res.code
+    } catch (e) {
+      console.log(e)
+
+      return ''
+    }
+  }
+
+  async getUserInfo() {
+    try {
+      const res = await wepy.getUserInfo({ withCredentials: true })
+      console.log(res)
+
+      return res
+    } catch (e) {
+      console.log(e)
+
+      if (e.errMsg === 'getUserInfo:fail auth deny') {
+        console.log('获取用户信息失败')
+
+        const res = await wepy.openSetting()
+
+        console.log(res)
+        if (res.authSetting['scope.userInfo']) {
+          this.login()
+        } else {
+          wepy.showModal({
+            title: '提醒',
+            content: '请允许小程序获取用户信息'
+          })
+        }
+      }
+      return null
+    }
+  }
+}
+</script>

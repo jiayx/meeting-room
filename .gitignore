@@ -1,0 +1,10 @@
+.DS_Store
+/node_modules
+/vendor
+/.idea
+/.vagrant
+npm-debug.log*
+yarn-error.log
+/dist
+/.wepycache
+

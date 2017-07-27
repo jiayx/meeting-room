@@ -1,0 +1,118 @@
+<style type="less">
+  .selector {
+    padding: 10px 0;
+  }
+  .date-select, .location-select {
+    padding: 12px 30rpx;
+    background: #fff;
+    margin-top: 20rpx;
+  }
+</style>
+<template>
+  <view class="selector">
+    <view class="date-select">
+      <picker mode="date" value="{{date}}" @change="selectDate" start="{{start}}" end="{{end}}">
+        <view class="picker">
+          选择日期: {{date}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="location-select">
+      <picker @change="selectLocation" value="{{index}}" range="{{locations}}" range-key="name">
+        <view class="picker">
+          选择楼号: {{locations[index].name}}
+        </view>
+      </picker>
+    </view>
+
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+  import fecha from 'fecha'
+  import api from '../api'
+
+  export default class Selector extends wepy.component {
+    data = {
+      date: fecha.format(new Date(), 'YYYY-MM-DD'),
+      index: 0,
+      locations: [],
+      start: '',
+      end: '',
+      superUsers: null
+    }
+
+    events = {
+      'change-date': async (user) => {
+        console.log('change-date')
+        const superUsers = await this.getSuperUsers()
+        if (superUsers && this.isSuperUser(user, superUsers)) {
+          this.start = ''
+          this.end = ''
+          this.$apply()
+        }
+      }
+    }
+
+    methods = {
+      selectDate (e) {
+        this.date = e.detail.value
+        this.$emit('date-emit', e.detail.value)
+      },
+      selectLocation(e) {
+        this.index = e.detail.value
+
+        this.$emit('location-emit', this.locations[this.index])
+      }
+    }
+
+    async onLoad() {
+      console.log('selector onload')
+
+      const now = new Date()
+      this.start = fecha.format(now, 'YYYY-MM-DD')
+      this.end = fecha.format(now.setDate(now.getDate() + 2), 'YYYY-MM-DD')
+
+      try {
+        const res = await api.getLocations()
+        this.locations = res.data
+
+        if (this.locations.length > 0) {
+          this.$emit('location-emit', this.locations[0])
+        }
+      } catch (e) {
+        console.log(e)
+        console.log('获取楼号失败')
+      }
+
+      this.$apply()
+    }
+
+    isSuperUser(user, superUsers) {
+      for (let i in superUsers) {
+        if (superUsers[i].wanxin == user.wanxin) {
+          return true
+        }
+      }
+
+      return false
+    }
+
+    async getSuperUsers() {
+      // if (this.superUsers !== null) {
+      //   return this.superUsers
+      // }
+
+      try {
+        const res = await api.getSuperUsers()
+        this.superUsers = res.data
+        this.$apply()
+        return res.data
+      } catch (e) {
+        console.log(e)
+        return null
+      }
+    }
+  }
+</script>

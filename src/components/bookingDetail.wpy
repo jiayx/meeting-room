@@ -1,0 +1,185 @@
+<style lang="less">
+  .header {
+    text-align: center;
+    margin: 10px;
+  }
+
+  .flex-wrp {
+    height: 42px;
+    font-size:12px;
+    display:flex;
+    background-color: #FFFFFF;
+    border-bottom: 2px solid #f7f8fa;
+  }
+  .flex-item {
+    flex: 1;
+    height: 32px;
+    text-align: center;
+    margin: 5px 0;
+    line-height: 32px;
+    vertical-align: middle;
+    color: #333;
+    font-size: 14px;
+  }
+  .flex-detail {
+    flex: 2;
+    margin: 5px;
+    height: 32px;
+    vertical-align: middle;
+    input {
+      height: 32px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .picker {
+      height: 32px;
+      line-height: 32px;
+    }
+  }
+
+  .detail {
+    display: none;
+    position: absolute;
+    top:10px;
+    left: 10%;
+    width: 80%;
+    height: 85%;
+    background: #fff;
+    z-index: 10;
+  }
+  .show {
+    display: block;
+  }
+  .btn {
+    width: 100%;
+    height: 40px;
+    line-height:40px;
+    font-size: 16px;
+    border-radius: 2px;
+  }
+  .btn-container {
+    padding: 20px 10rpx 0;
+    background: transparent;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+<template>
+  <view class="header">
+    预订详情
+  </view>
+
+  <scroll-view scroll-x="true" scroll-y="true">
+    <form bindsubmit="formSubmit">
+      <input type="text" class="hidden" name="meeting_room_id" value="{{bookingDetail.meeting_room_id}}" />
+      <input type="text" class="hidden" name="floor" value="{{bookingDetail.floor}}" />
+      <input type="text" class="hidden" name="location_id" value="{{bookingDetail.location_id}}" />
+      <input type="text" class="hidden" name="name" value="{{bookingDetail.name}}" />
+      <view class="section">
+        <view class="flex-wrp"><view class="flex-item">会议主题</view><view class="flex-detail"><input type="text" disabled="{{!!bookingDetail.id}}" name="subject" placeholder="请输入会议主题" placeholder-style="color:#ccc;" value="{{bookingDetail.subject}}"></view></view>
+        <view class="flex-wrp"><view class="flex-item">会议日期</view><view class="flex-detail"><input type="text" disabled="{{1===1}}" name="date" value="{{bookingDetail.date}}"></view></view>
+        <view class="flex-wrp"><view class="flex-item">开始时间</view><view class="flex-detail"><input type="text" disabled="{{1===1}}" name="start_time" value="{{bookingDetail.start_time}}"></view></view>
+        <view class="flex-wrp"><view class="flex-item">结束时间</view><view class="flex-detail"><input type="text" disabled="{{1===1}}" name="end_time" value="{{bookingDetail.end_time}}"></view></view>
+        <view class="flex-wrp"><view class="flex-item">会议人数</view>
+          <view class="flex-detail">
+            <picker style="{height: 32px;}" bindchange="bindPickerChange" value="{{index}}" name="attendance_count" range="{{array}}">
+              <view class="picker">
+                {{array[index]}}
+              </view>
+            </picker>
+          </view>
+        </view>
+        <view class="flex-wrp btn-container" wx:if="{{!!bookingDetail.id && bookingDetail.current}}"><button class="btn" type="primary" @tap="cancelBooking({{bookingDetail.id}})">取消预订</button></view>
+        <view class="flex-wrp btn-container" wx:if="{{!bookingDetail.id}}"><button class="btn" formType="submit" type="primary">确认预订</button></view>
+      </view>
+    </form>
+  </scroll-view>
+  <popup></popup>
+</template>
+<script>
+  import wepy from 'wepy'
+  import Popup from '../components/popup'
+  export default class BookingDetail extends wepy.component {
+    props = {
+      bookingDetail: {
+        type: Object
+      },
+      id: {
+        type: Object
+      }
+    }
+    components = {
+      popup: Popup
+    }
+    events = {
+      'index-broadcast': (...args) => {
+        let $event = args[args.length - 1]
+        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
+      }
+    }
+    watch = {
+    }
+    data = {
+      array: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      index: 4
+    }
+
+    methods = {
+      cancelBooking(id) {
+        const that = this
+        wx.showModal({
+          title: '提示',
+          content: '您确定要取消这个预订吗？',
+          success: function(res) {
+            if (res.confirm) {
+              that.$parent.cancelBooking(id)
+            } else if (res.cancel) {
+            }
+          }
+        })
+      },
+      bindPickerChange(e) {
+        console.log('picker发送选择改变，携带值为', JSON.stringify(e.detail));
+        this.index = e.detail.value;
+      },
+      addBooking(id) {
+        const that = this
+        wx.showModal({
+          title: '提示',
+          content: '您确定要预订吗？',
+          success: function(res) {
+            if (res.confirm) {
+              that.$parent.addBooking(id)
+            } else if (res.cancel) {
+            }
+          }
+        })
+      },
+      formSubmit(e) {
+        const that = this
+        e.detail.value.attendance_count = this.array[e.detail.value.attendance_count];
+        if (e.detail.value.subject.length < 1) {
+          this.toastShow('请输入会议主题！');
+        } else {
+          wx.showModal({
+            title: '提示',
+            content: '您确定要预订吗？',
+            success: function(res) {
+              if (res.confirm) {
+                e.detail.value.end_time += ':00'
+                e.detail.value.start_time += ':00'
+                that.$parent.addBooking(e.detail.value)
+              } else if (res.cancel) {
+              }
+            }
+          })
+        }
+      }
+    }
+    toastShow(message) {
+      this.$invoke('popup', 'show', message)
+    }
+  }
+</script>

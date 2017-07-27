@@ -1,0 +1,72 @@
+<style lang="less">
+  .popup {
+    position: fixed;
+    z-index: 5000;
+    display: flex;
+    box-sizing: border-box;
+    top: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+    justify-content: space-around;
+    min-width: 200rpx;
+    background: rgba(40, 40, 40, 0.75);
+    padding: 10rpx;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+    color: #fff;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+<template>
+  <view class="popup" :class="{hidden: hidden}">
+    <text>{{message}}</text>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class Popup extends wepy.component {
+    props = {
+      timeout: {
+        type: Number,
+        default: 2
+      }
+    }
+
+    data = {
+      message: '',
+      hidden: true
+    }
+
+    methods = {}
+
+    show(message) {
+      this.message = message
+
+      if (this.timer) {
+        clearTimeout(this.timer)
+      }
+
+      if (message) {
+        this.timer = setTimeout(() => {
+          this.hidden = true
+          this.$apply()
+        }, this.timeout * 1000)
+
+        this.hidden = false
+      } else {
+        this.hidden = true
+      }
+
+      this.$apply()
+    }
+
+    hide() {
+      this.show('')
+    }
+  }
+</script>

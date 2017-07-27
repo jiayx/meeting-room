@@ -1,0 +1,321 @@
+<style lang="less">
+  page {
+    background: #f2f2f2;
+  }
+  .meeting-room {}
+
+  .top {
+    box-sizing: border-box;
+    height: 60px;
+    background: #fff;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+    padding: 10px;
+    .date {
+      height: 20px;
+    }
+
+    .location {
+      height: 20px;
+    }
+  }
+
+  .selected-time {
+    margin: 10px 4px;
+  }
+
+  .bottom {
+    box-sizing: border-box;
+    position: fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index: 10;
+    font-size: 16px;
+    text-align: center;
+    padding: 6px 6px;
+    background: #fff;
+
+    .booking-btn {
+      box-sizing: border-box;
+      height: 40px;
+      background: #1AAD16;
+      color: #fff;
+      padding: 20rpx 0;
+      border-radius: 2px;
+    }
+
+    .booking-info {
+      font-size: 14px;
+      margin-bottom: 6px;
+
+      .selected-time {
+        display: flex;
+        justify-content: center;
+        width: 100rpx;
+
+        .bookings-item {
+          font-size: 12px;
+          width: 80px;
+        }
+      }
+      .prompt {
+        display: flex;
+        justify-content: center;
+        .prompt-block {
+          display: flex;
+          align-items: center;
+          flex-flow: column;
+          width: 80px;
+          height: 40px;
+          .prompt-block-color {
+            margin-bottom: 4px;
+            width: 30px;
+            height: 20px;
+          }
+        }
+      }
+    }
+  }
+
+  .booking-confirm {
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    background: rgba(40, 40, 40, 0.75);
+
+  }
+  .hidden {
+    display: none;
+  }
+
+  .can-booking {
+    background: #fff;
+    border: 1px solid #ddd;
+  }
+
+  .used {
+    background: #ea1544;
+  }
+
+  .my-selected {
+    background: #53c18e;
+  }
+
+</style>
+<template>
+  <view class="container">
+    <view class="top">
+      <view class="date">日期：{{date}}</view>
+      <view class="location">楼号：{{locationName}}</view>
+    </view>
+    <view class="meeting-room">
+      <bookingTable :meetingRooms.sync="meetingRooms" :maxHeight.sync="maxHeight" @times-selected.user="selectTime" @time-click.user="clickTime"></bookingTable>
+    </view>
+
+    <view class="bottom">
+      <view class="booking-info">
+        <view wx:if="{{false}}" class="selected-time">
+          <!-- 这个后面再做 -->
+          <view wx:for="{{bookings}}" class="bookings-item">
+          </view>
+        </view>
+        <view wx:else class="prompt">
+          <view class="prompt-block">
+            <view class="prompt-block-color can-booking"></view>
+            <view class="">可预订</view>
+          </view>
+          <view class="prompt-block">
+            <view class="prompt-block-color used"></view>
+            <view class="">已被预订</view>
+          </view>
+          <view class="prompt-block">
+            <view class="prompt-block-color my-selected"></view>
+            <view class="">当前选中</view>
+          </view>
+        </view>
+      </view>
+      <view class="booking-btn" @tap="booking">确认选择</view>
+    </view>
+
+
+    <!-- <view class="booking-confirm" :class="{hidden: hidden}">
+      <view>
+
+      </view>
+    </view> -->
+  </view>
+  <popup></popup>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Toast from 'wepy-com-toast'
+  import log from '../utils/log'
+  import api from '../api'
+  import BookingTable from '../components/bookingTable'
+  import Popup from '../components/popup'
+
+  export default class Booking extends wepy.page {
+    config = {
+      navigationBarTitleText: '会议室预订',
+      navigationBarBackgroundColor: '#f7f8fa',
+      enablePullDownRefresh: false
+    }
+    components = {
+      toast: Toast,
+      bookingTable: BookingTable,
+      popup: Popup
+    }
+
+    data = {
+      date: '',           // 查询的日期
+      locationName: '',   // 楼栋名字
+      bookings: [],       // 选中的的时间段
+      meetingRoom: {},    // 选中的会议室
+      meetingRooms: [],   // 查询到的会议室列表
+      confirmHidden: true,
+      params: {},
+      booking: {},        // 查看的某一条预订数据
+      maxHeight: '400px',
+      user: {},
+      userLoading: true
+    }
+
+    methods = {
+      selectTime(meetingRoom, bookings) {
+        // console.log(meetingRoom)
+        // console.log(bookings)
+        this.meetingRoom = meetingRoom
+        this.bookings = bookings
+        this.$apply()
+      },
+
+      async clickTime(time, meetingRoom) {
+        return
+        if (time && time.booking_id) {
+          let booking = null
+          meetingRoom.bookings.forEach(item => {
+            if (item.id === time.booking_id) {
+              booking = item
+            }
+          })
+
+          if (booking) {
+            // TODO 这个地方采用加密后的 user_id 来做
+            const res = await api.getUserInfo({id: booking.user_id})
+            this.userLoading = false
+            if (res.code !== '200') {
+              this.toastShow('获取预订信息失败，请重试')
+              return
+            }
+            this.user = res.data
+          }
+
+          this.$apply()
+        }
+      },
+
+      booking() {
+        if (!this.meetingRoom.id || this.bookings.length < 1) {
+          this.toastShow('请选择要预定的会议室')
+          return
+        }
+
+        const pickTime = this.pickTime(this.bookings)
+        console.log(pickTime)
+        const startTime = pickTime.startTime
+        const endTime = pickTime.endTime
+
+        wepy.navigateTo({
+          url: `detailBooking?date=${this.date}&meeting_room_id=${this.meetingRoom.id}&start_time=${startTime}&end_time=${endTime}`
+        })
+      }
+    }
+
+    async getMettingRooms(params) {
+      try {
+        const res = await api.meetingRoom(params)
+        console.log(res)
+
+        this.meetingRooms = res.data
+        this.$apply()
+      } catch (e) {
+        console.log(e)
+        console.log('获取会议室失败')
+      }
+    }
+
+    async onLoad(params) {
+      console.log('booking onload')
+
+      this.date = params.date
+      this.locationName = params.location_name
+      this.params = params
+      this.$apply()
+
+      const user = await this.$parent.checkLogin()
+      if (!user) {
+        wepy.navigateBack()
+      }
+
+      // console.log(user)
+
+      if (!user.wanxin) {
+        log.debug('准备跳转到 bind')
+        wepy.redirectTo({
+          url: 'bind'
+        })
+      }
+
+      await this.getMettingRooms(params)
+
+      try {
+        const res = await wepy.getSystemInfo()
+        // console.log(res)
+        // top 60、bottom 98 按 100 算
+        this.maxHeight = (res.windowHeight - 60 - 100) + 'px'
+      } catch (e) {
+      }
+
+      this.$parent.globalData.loaded = true
+
+      this.$apply()
+    }
+
+    async onShow() {
+      console.log('booking onshow')
+      if (this.$parent.globalData.loaded) {
+        await this.getMettingRooms(this.params)
+      }
+    }
+
+    toastShow(message) {
+      this.$invoke('popup', 'show', message)
+    }
+
+    pickTime(bookings) {
+      const time = {
+        startTime: '99:99:99',
+        endTime: ''
+      }
+      bookings.forEach(item => {
+        // 取最小
+        if (time.startTime > item.start) {
+          time.startTime = item.start
+        }
+
+        // 取最大
+        if (time.endTime < item.end) {
+          time.endTime = item.end
+        }
+      })
+
+      return time
+    }
+  }
+</script>

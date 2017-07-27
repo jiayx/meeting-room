@@ -1,0 +1,29 @@
+<style lang="less">
+  .about {
+    margin-top: 100px;
+    text-align: center;
+  }
+</style>
+
+<template>
+  <view class="about">
+    <view class="">{{title}}</view>
+    <view class="">{{version}}</view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class About extends wepy.page {
+    config = {
+      navigationBarTitleText: '关于',
+      enablePullDownRefresh: false
+    }
+
+    data = {
+      title: '万达会议室预订',
+      version: '0.9.0'
+    }
+  }
+</script>

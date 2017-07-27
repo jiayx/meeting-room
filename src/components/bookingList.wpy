@@ -1,0 +1,178 @@
+<style lang="less">
+  @border-color: #ddd;
+
+  .wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background: #fff;
+  }
+
+  .header {
+    text-align: center;
+    margin: 10px;
+  }
+
+  .time {
+    display: flex;
+    background: #eee;
+    flex-flow: column;
+    width: 60px;
+
+    .col {
+      display: flex;
+      padding: 2px 4px;
+      border-top: 1px solid @border-color;
+      align-items: center;
+      height: 50px;
+      justify-content: center;
+      align-items: center;
+      flex-flow: column;
+
+      text {
+        font-size: 12px;
+        display: flex;
+      }
+    }
+  }
+
+  .row {
+    display: flex;
+    flex-flow: column;
+    border-left: 1px solid @border-color;
+    width: 60px;
+    text-algin: center;
+    font-size: 14px;
+
+    .col {
+      display: flex;
+      padding: 2px 4px;
+      border-top: 1px solid @border-color;
+      align-items: center;
+      height: 50px;
+      justify-content: center;
+    }
+
+    .used {
+      background: #f2dede;
+    }
+    .selected {
+      background: #dff0d8;
+    }
+  }
+  .flex-wrp{
+    height: 45px;
+    font-size:12px;
+    display:flex;
+    background-color: #FFFFFF;
+    padding: 15px 20px;
+    border-bottom: 2px solid #f7f8fa;
+  }
+  .flex-item{
+      height: 45px;
+      flex: 3;
+      line-height: 25px;
+      vertical-align: middle;
+  }
+  .flex-opt{
+    height: 45px;
+      flex: 1;
+      line-height: 50px;
+      text-align: center;
+      vertical-align: middle;
+  }
+  .flex-opt view {
+    width: 50%;
+    float: left;
+    color: #3597f2;
+    font-size: 15px;
+  }
+  .gray {
+    color: #c6c6c6 !important;
+  }
+  .detail {
+    display: none;
+    position: absolute;
+    top:10px;
+    left: 10%;
+    width: 80%;
+    height: 85%;
+    background: #fff;
+    z-index: 10;
+  }
+  .show {
+    display: block;
+  }
+  .meeting-name {
+    font-size:16px;
+    color: #333;
+    height: 25px;
+    line-height: 25px;
+  }
+  .meeting-date {
+    font-size: 13px;
+    color: #333;
+    height: 20px;
+    line-height: 22px;
+  }
+  .meeting-date view {
+    display: inline-block;
+    margin: 0 30px 0 0;
+  }
+</style>
+<template>
+  <!-- <view class="header">
+    我的预订
+  </view> -->
+  <scroll-view scroll-x="true" scroll-y="true">
+    <view class="section">
+      <view class="flex-wrp" style="flex-direction:row;" wx:for="{{bookingList}}" wx:key="id" wx:for-item="booking">
+        <view class="flex-item">
+          <view class="meeting-name">{{booking.meeting_room.name}} </view>
+          <view class="meeting-date"><view>{{booking.date}}</view><view>{{booking.start_time + '-' + booking.end_time}}</view></view>
+        </view>
+        <view class="flex-opt">
+          <view class="flex-set" @tap="reviewBooking({{booking.id}})" >详情</view>
+          <view class="flex-set gray" wx:if"{{booking.isBefore}}" @tap="cancelBooking({{booking.id}})" >取消</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</template>
+<script>
+  import wepy from 'wepy'
+  export default class BookingList extends wepy.component {
+    props = {
+      bookingList: {
+        type: Object
+      }
+    }
+    events = {
+      'index-broadcast': (...args) => {
+        let $event = args[args.length - 1]
+        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
+      }
+    }
+
+    watch = {
+    }
+    methods = {
+      cancelBooking(id) {
+        const that = this
+        wx.showModal({
+          title: '提示',
+          content: '您确定要取消这个预订吗？',
+          success: function(res) {
+            if (res.confirm) {
+              that.$parent.cancelBooking(id)
+            } else if (res.cancel) {
+            }
+          }
+        })
+      },
+      reviewBooking(id) {
+        this.$root.$navigate({url: 'detailBooking?id=' + id})
+      }
+    }
+  }
+</script>

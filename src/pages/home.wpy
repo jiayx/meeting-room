@@ -1,0 +1,129 @@
+<style lang="less">
+  .home-header {
+    margin: 10px 0 0;
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .home-submit {
+    box-sizing: border-box;
+    height: 40px;
+    line-height: 40px;
+    font-size: 16px;
+    text-align: center;
+    background: #1AAD16;
+    color: #fff;
+    margin: 20rpx 10rpx;
+    border-radius: 2px;
+  }
+
+  .notice {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    color: #bbb;
+    font-size: 12px;
+    margin: 0 20rpx;
+  }
+</style>
+
+<template>
+  <view class="container">
+    <view class="home-header">
+      <text>会议室预订</text>
+    </view>
+
+    <view>
+      <selector @date-emit.user="changeDate" @location-emit.user="changeLocation"></selector>
+    </view>
+
+    <view>
+      <view class="home-submit" @tap="search">查询</view>
+    </view>
+
+    <view class="notice">
+      <view>提示：</view>
+      <view>1. 最早可提前两天预订会议室</view>
+      <view>2. 目前仅支持东方万国企业中心 B1 座</view>
+    </view>
+
+  </view>
+
+  <popup></popup>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Toast from 'wepy-com-toast'
+  import fecha from 'fecha'
+  import Selector from '../components/selector'
+  import Popup from '../components/popup'
+
+  export default class Home extends wepy.page {
+    config = {
+      navigationBarTitleText: '会议室预订',
+      enablePullDownRefresh: false
+    }
+    components = {
+      toast: Toast,
+      selector: Selector,
+      popup: Popup
+    }
+
+    data = {
+      date: fecha.format(new Date(), 'YYYY-MM-DD'),
+      location: null
+    }
+
+    methods = {
+      changeDate(date) {
+        console.log(date)
+        this.date = date
+      },
+
+      changeLocation(location) {
+        console.log(location)
+        this.location = location
+      },
+
+      search() {
+        if (this.date === '') {
+          this.$invoke('popup', 'show', '请选择日期')
+          return
+        }
+        if (!this.location) {
+          this.$invoke('popup', 'show', '请选择楼号')
+          return
+        }
+
+        // 从这个页面第二次进入 booking 页面会触发 onLoad 和 onShow
+        // 而从 预订会议室页面返回的时候 不会触发 onLoad
+        // 这里是防止两次 拉取数据（onShow 拉取的不准确，date 用的是旧的）
+        this.$parent.globalData.loaded = false
+
+        wepy.navigateTo({
+          url: `booking?date=${this.date}&location_id=${this.location.id}&location_name=${this.location.name}`
+        })
+      }
+    }
+
+    async onShow() {
+      console.debug('home onShow')
+
+      const user = await this.$parent.checkLogin()
+      console.log(user)
+
+      if (!user.wanxin) {
+        console.log('准备跳转到 bind')
+        wepy.redirectTo({
+          url: 'bind'
+        })
+      }
+
+      this.$broadcast('change-date', user)
+      this.$apply()
+    }
+  }
+</script>

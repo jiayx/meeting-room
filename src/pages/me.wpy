@@ -1,0 +1,121 @@
+<style lang="less">
+  .me {
+    display: flex;
+    flex-direction: column;
+    color: #333;
+
+    .me-item {
+      border-top: 1rpx solid #eeeeee;
+      background-color: #ffffff;
+      padding: 12px;
+
+      &:first-child {
+        border-top: none;
+      }
+    }
+
+    .my-info {
+      display: flex;
+      flex-direction: column;
+      .avatar {
+        text-align: center;
+      }
+      .nickname {
+        padding-top: 20rpx;
+        text-align: center;
+      }
+    }
+
+    .me-item-wrap {
+      margin-top: 20rpx;
+      .me-item {
+        display: flex;
+        justify-content: space-between;
+      }
+    }
+  }
+  .gray {
+    color: gray;
+  }
+</style>
+
+<template>
+  <view class="me">
+    <view class="me-item">
+      <view class="my-info">
+        <view class="avatar">
+          <image style="width: 180rpx; height: 180rpx; border-radius: 50%;" src="{{user.avatar}}"></image>
+        </view>
+        <view class="nickname">
+          <text>{{user.name || user.nickname}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="me-item-wrap">
+      <view class="me-item" @tap="navigateTo('myBookings')">
+        <text>我的预订</text>
+        <text class="gray">></text>
+      </view>
+    </view>
+
+    <view class="me-item-wrap">
+      <view class="me-item" @tap="navigateTo('feedback')">
+        <text>意见反馈</text>
+        <text class="gray">></text>
+      </view>
+    </view>
+
+    <view class="me-item-wrap">
+      <view class="me-item" @tap="navigateTo('about')">
+        <text>关于</text>
+        <text class="gray">></text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class Me extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的',
+      navigationBarBackgroundColor: '#ffffff',
+      enablePullDownRefresh: false
+    }
+
+    data = {
+      user: {}
+    }
+
+    methods = {
+      navigateTo(url) {
+        if (!url) {
+          return
+        }
+
+        wepy.navigateTo({ url })
+      }
+    }
+
+    onLoad() {
+      console.log('me onload')
+    }
+
+    async onShow() {
+      console.log('me onshow')
+      const user = await this.$parent.checkLogin()
+
+      if (!user.wanxin) {
+        console.log('准备跳转到 bind')
+        wepy.redirectTo({
+          url: 'bind'
+        })
+      }
+
+      this.user = user
+      this.$apply()
+    }
+  }
+</script>

@@ -1,0 +1,144 @@
+<style lang="less">
+  .userinfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .userinfo-avatar {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+  }
+
+  .userinfo-nickname {
+    color: #aaa;
+  }
+
+  .container, .meeting-room {
+    height: 100%;
+  }
+</style>
+<template>
+  <view class="container">
+    <view class="meeting-room">
+      <bookingDetail :bookingDetail.sync="bookingDetail"></bookingDetail>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import api from '../api'
+  import storage from '../utils/storage'
+  import bookingDetail from '../components/bookingDetail'
+
+  export default class DetailBooking extends wepy.page {
+    config = {
+      navigationBarTitleText: '预订详情',
+      enablePullDownRefresh: false
+    }
+    components = {
+      bookingDetail: bookingDetail
+    }
+
+    data = {
+      bookingDetail: {
+        meeting_room_id: 2,
+        floor: 1,
+        location_id: 1,
+        name: '7楼3会',
+        date: '2017-07-25',
+        start_time: '16:30',
+        end_time: '17:30',
+        current: true
+      }
+    }
+
+    computed = {
+      now () {
+        return +new Date()
+      }
+    }
+
+    async onLoad(e) {
+      //storage.get("userInfo");
+      const val = await storage.get('userInfo')
+
+      if (e.id) {
+        const res = await api.getBook(e)
+        if (res.code === '200') {
+          if (new Date((res.data.date + ' ' + res.data.start_time).replace(/\s+/g, 'T').concat('.000+08:00')).getTime() > new Date().getTime()) {
+            res.data.current = true
+          } else {
+            res.data.current = false
+          }
+          res.data.start_time = res.data.start_time.substr(0, 5)
+          res.data.end_time = res.data.end_time.substr(0, 5)
+          // TODO 这个地方采用加密后的 user_id 来做
+          if(val.id != res.data.user_id && res.data.current) {
+            res.data.current = false
+          }
+          this.bookingDetail = res.data
+          console.log(JSON.stringify(this.bookingDetail))
+          this.$apply()
+        }
+      } else {
+        e.start_time = e.start_time.substr(0, 5)
+        e.end_time = e.end_time.substr(0, 5)
+        this.bookingDetail = e
+      }
+    }
+    events = {
+      'index-emit': (...args) => {
+        let $event = args[args.length - 1]
+        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
+      }
+    };
+    async cancelBooking(id) {
+      const res = await api.cancelBook({
+        id: id
+      })
+
+      if (res.code === '200') {
+        wx.showToast({
+          title: '成功',
+          icon: 'success',
+          duration: 1000
+        })
+        wx.navigateBack()
+        this.$apply()
+      } else {
+        wx.showModal({
+          title: '错误',
+          content: res.message,
+          showCancel: false,
+          success: function(res) {
+          }
+        })
+      }
+    }
+    async addBooking(bookingDetail) {
+      const res = await api.addBook(bookingDetail)
+
+      if (res.code === '200') {
+        wx.showToast({
+          title: '成功',
+          icon: 'success',
+          duration: 1000
+        })
+        wx.navigateBack()
+        this.$apply()
+      } else {
+        wx.showModal({
+          title: '错误',
+          content: res.message,
+          showCancel: false,
+          success: function(res) {
+          }
+        })
+      }
+    }
+  }
+</script>

@@ -1,0 +1,278 @@
+<style lang="less">
+  @border-color: #ddd;
+
+  .scroll-view {
+    height: 100%;
+  }
+
+  .wrap {
+    display: flex;
+    margin-bottom:6px;
+  }
+
+  .header {
+    text-align: center;
+  }
+
+  .time {
+    display: flex;
+    flex-flow: column;
+    position: fixed;
+    box-sizing: border-box;
+    z-index: 10;
+    padding-top: 13px;
+    background: #f2f2f2;
+    border-right: 1px solid #ccc;
+    width: 50px;
+
+    .col {
+      display: flex;
+      // border-top: 1px solid @border-color;
+      align-items: center;
+      height: 31px;
+      justify-content: center;
+      align-items: center;
+      flex-flow: column;
+
+      text {
+        font-size: 12px;
+        display: flex;
+      }
+    }
+  }
+
+  .table {
+    margin-left: 50px;
+    display: flex;
+  }
+  .row {
+    display: flex;
+    box-sizing: border-box;
+    flex-flow: column;
+    // border-left: 1px solid @border-color;
+    text-algin: center;
+    font-size: 14px;
+
+    .col {
+      display: flex;
+      // border-top: 1px solid @border-color;
+      border: 1px solid @border-color;
+      align-items: center;
+      height: 20px;
+      width: 30px;
+      margin: 0 10px;
+      margin-top: 10px;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .name {
+      background: inherit;
+      border: none;
+      width: 50px;
+      margin: 0;
+    }
+
+    .used {
+      background: #ea1544;
+    }
+    .selected {
+      background: #53c18e;
+    }
+  }
+</style>
+<template>
+  <scroll-view class="scroll-view" scroll-x="true" scroll-y="true" style="max-height: {{maxHeight}}">
+    <view class="wrap">
+      <view class="time">
+        <view class="col">
+          <text>08:30 -</text>
+        </view>
+        <view wx:for="{{timeListShow}}" wx:key="id" class="col">
+          <text>{{item.end}} -</text>
+        </view>
+      </view>
+
+      <view class="table">
+        <view class="row" wx:for="{{meetingRooms}}" wx:key="id" wx:for-item="room">
+          <view class="col name">{{room.name}}</view>
+          <view wx:for="{{room.times}}" wx:key="id" wx:for-item="time" class="col"
+            :class="{used: time.used, selected: meetingRoom.id === room.id && selected[time.id]}"
+            @tap="selectTime({{time}}, {{room}})"
+          ></view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+  <popup></popup>
+</template>
+<script>
+  import wepy from 'wepy'
+  import api from '../api'
+  import Popup from '../components/popup'
+
+  export default class BookingTable extends wepy.component {
+    props = {
+      meetingRooms: {
+        type: Object
+      },
+      maxHeight: {
+        type: String
+      }
+    }
+
+    components = {
+      popup: Popup
+    }
+
+    data = {
+      timeListShow: [],
+      timeList: [],
+      selected: {},
+      meetingRoom: {}
+    }
+
+    watch = {
+      meetingRooms(curVal, oldVal) {
+        this.selected = {}
+        this.$apply()
+      }
+    }
+
+    methods = {
+      selectTime (time, room) {
+        // TODO 已经被预定的不能再选
+        // console.log(time, room)
+        this.$emit('time-click', time, room)
+
+        if (time.used) {
+          return
+        }
+
+        if (room.id !== this.meetingRoom.id) {
+          this.selected = {}
+        }
+
+        this.meetingRoom = room
+
+        if (this.selected[time.id]) {
+          delete (this.selected[time.id])
+        } else {
+          const selectedIds = Object.keys(this.selected)
+
+          if (selectedIds.length === 1) {
+            if (Math.abs(selectedIds[0] - parseInt(time.id)) > 1) {
+              this.$invoke('popup', 'show', '请选择相邻的 2 个时间段')
+              return
+            }
+          }
+
+          if (selectedIds.length >= 2) {
+            this.$invoke('popup', 'show', '每次最多预订 2 个时间段')
+            return
+          }
+
+          this.selected[time.id] = true
+        }
+
+        console.log(this.selected)
+        const selectedTime = []
+        this.timeList.forEach(item => {
+          // console.log(item)
+          for (let i in this.selected) {
+            if (item.id == i) {
+              console.log(item)
+              selectedTime.push(item)
+              break
+            }
+          }
+        })
+
+        this.$apply()
+        this.$emit('times-selected', this.meetingRoom, selectedTime)
+
+        // 暂时注释掉 不做帮忙选时间段了
+        // let firstId = 0
+
+        // const temp = {}
+        // for (let i in this.timeList) {
+        //   if (this.selected[this.timeList[i].id] === true) {
+        //     firstId = this.timeList[i].id
+        //     break
+        //   }
+        // }
+
+        // if (firstId > 0) {
+        //   if (this.hasUsed(firstId, time.id, room)) {
+        //     this.$invoke('popup', 'show', '不能选择已被预订的时间段')
+        //     return
+        //   }
+        // }
+
+        // if (firstId === 0) {
+        //   temp[time.id] = true
+        // } else {
+        //   if (firstId > time.id) {
+        //     while (time.id <= firstId) {
+        //       temp[time.id++] = true
+        //     }
+        //   } else if (firstId < time.id) {
+        //     while (time.id >= firstId) {
+        //       temp[firstId++] = true
+        //     }
+        //   } else {
+        //     // 点击了选中的第一个块 什么也不做代表 取消选中
+        //     // temp[time.id] = false
+        //   }
+        // }
+
+        // this.selected = temp
+
+        // this.$emit('times-emit', this.meetingRoom, this.selected)
+      }
+    }
+
+    // 查找同一天两个方块之间的方块是否被占用
+    // hasUsed(a, b, meetingRoom) {
+    //   // 交换 a b 的值
+    //   if (a > b) {
+    //     a = b + a
+    //     b = a - b
+    //     a = a - b
+    //   }
+
+    //   const temp = {}
+    //   for (let i in meetingRoom.times) {
+    //     temp[meetingRoom.times[i].id] = meetingRoom.times[i]
+    //   }
+
+    //   while (a < b && meetingRoom.times) {
+    //     if (temp[a] && temp[a].used) {
+    //       return true
+    //     }
+    //     a++
+    //   }
+    // }
+
+    async onLoad() {
+      try {
+        const res = await api.getSchedules()
+        this.timeList = res.data
+
+        const temp = []
+        this.timeList.forEach(item => {
+          temp.push({
+            id: item.id,
+            start: item.start.substr(0, 5),
+            end: item.end.substr(0, 5)
+          })
+        })
+
+        this.timeListShow = temp
+      } catch (e) {
+        console.log(e)
+        this.$invoke('popup', 'show', '获取可选时间出错')
+      }
+    }
+  }
+</script>
