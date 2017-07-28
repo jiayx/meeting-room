@@ -44,15 +44,24 @@
     }
 
     events = {
-      'change-date': async (user) => {
-        console.log('change-date')
+      'check-super-user': async (user) => {
+        console.log('check-super-user')
         const superUsers = await this.getSuperUsers()
         if (superUsers && this.isSuperUser(user, superUsers)) {
           this.start = ''
           this.end = ''
           this.$apply()
         }
-      }
+      },
+
+      // 如果写在 onLoad 里面只会触发一次
+      // 而 wepy.component 不响应 onShow
+      // 为了避免第一次打开网络不好没加载出来 locations
+      // 暂时不开启 减少网络请求 后期可以优化
+      // 'load-locations': async () => {
+      //   console.log('load-locations')
+      //   await this.loadLocations()
+      // }
     }
 
     methods = {
@@ -67,13 +76,19 @@
       }
     }
 
-    async onLoad() {
+    onLoad() {
       console.log('selector onload')
 
       const now = new Date()
       this.start = fecha.format(now, 'YYYY-MM-DD')
       this.end = fecha.format(now.setDate(now.getDate() + 2), 'YYYY-MM-DD')
+      this.$apply()
 
+      this.loadLocations()
+    }
+
+    async loadLocations() {
+      console.log('selector onshow')
       try {
         const res = await api.getLocations()
         this.locations = res.data

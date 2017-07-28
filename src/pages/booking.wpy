@@ -80,13 +80,14 @@
   }
 
   .booking-preview {
+    display: flex;
     position: fixed;
     z-index: 500;
     top: 0;
     right: 0;
     left: 0;
     bottom: 0;
-    display: flex;
+
     background: rgba(40, 40, 40, 0.75);
     justify-content: center;
     align-items: center;
@@ -99,7 +100,7 @@
 
       .close {
         text-align: right;
-        padding: 4px 8px;
+        padding: 6px 8px;
         border-bottom: 1px solid #ddd;
         font-size: 16px;
         height: 20px;
@@ -135,6 +136,7 @@
       }
     }
   }
+
   .hidden {
     display: none;
   }
@@ -167,6 +169,7 @@
         :meetingRooms.sync="meetingRooms"
         :maxHeight.sync="maxHeight"
         :selectedDate.sync="date"
+        :currentUser.sync="currentUser"
         @times-selected.user="selectTime"
         @time-click.user="clickTime"
       ></bookingTable>
@@ -273,9 +276,10 @@
       params: {},         // 上个页面传来的参数
       maxHeight: '400px', // scroll-view 高度
       booking: {},        // 查看的某一条预订数据
-      user: {},
+      user: {},           // 查看预订人
       userLoading: true,
-      previewHidden: true
+      previewHidden: true,
+      currentUser: {}     // 当前登录的用户
     }
 
     methods = {
@@ -388,6 +392,9 @@
         wepy.navigateBack()
       }
 
+      this.currentUser = user
+      this.$apply()
+
       // console.log(user)
 
       if (!user.wanxin) {
@@ -441,6 +448,18 @@
       })
 
       return time
+    }
+
+    // 分享
+    onShareAppMessage() {
+      return {
+        title: '会议室预订',
+        path: '/pages/home',
+        success: function(res) {
+        },
+        fail: function(res) {
+        }
+      }
     }
   }
 </script>

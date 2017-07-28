@@ -1,7 +1,8 @@
 import wepy from 'wepy'
 import storage from '../utils/storage'
 
-const baseUrl = 'http://10.156.18.232:8400/api' // http://booking.ffan.me/api'
+const baseUrl = 'http://10.156.18.232:8400/api'
+// const baseUrl = 'https://booking.ffan.com/api'
 
 const wxRequest = async (url, params = {}, notice = '加载中...') => {
   if (wepy.hideToast) {
@@ -78,7 +79,7 @@ const addBook = params => wxRequest(baseUrl + '/bookings', {
 
 const getLocations = () => wxRequest(baseUrl + '/locations', {
   method: 'GET'
-})
+}, '楼号加载中...')
 
 const booking = params => wxRequest(baseUrl + '/bookings', {
   data: params,

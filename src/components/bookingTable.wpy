@@ -55,7 +55,6 @@
 
     .col {
       display: flex;
-      // border-top: 1px solid @border-color;
       border: 1px solid @border-color;
       align-items: center;
       height: 20px;
@@ -64,6 +63,9 @@
       margin-top: 10px;
       justify-content: center;
       background: #fff;
+      font-size: 10px;
+      color: #fff;
+      text-align: center;
     }
 
     .name {
@@ -71,6 +73,8 @@
       border: none;
       width: 50px;
       margin: 0;
+      font-size: 14px;
+      color: #333;
     }
 
     .disable {
@@ -102,7 +106,7 @@
           <view wx:for="{{room.times}}" wx:key="id" wx:for-item="time" class="col"
             :class="{disable: todayDate === selectedDate && nowTime >= time.end, used: time.used, selected: meetingRoom.id === room.id && selected[time.id]}"
             @tap="selectTime({{time}}, {{room}})"
-          ></view>
+          >{{currentUser.id == time.user_id ? '我' : ''}}</view>
         </view>
       </view>
     </view>
@@ -125,6 +129,9 @@
       },
       selectedDate: {
         type: String
+      },
+      currentUser: {
+        type: Object
       }
     }
 

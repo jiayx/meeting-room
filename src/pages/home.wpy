@@ -122,8 +122,22 @@
         })
       }
 
-      this.$broadcast('change-date', user)
+      this.$broadcast('check-super-user', user)
+      this.$broadcast('load-locations')
       this.$apply()
     }
+
+    // 分享
+    onShareAppMessage() {
+      return {
+        title: '会议室预订',
+        path: '/pages/home',
+        success: function(res) {
+        },
+        fail: function(res) {
+        }
+      }
+    }
+
   }
 </script>

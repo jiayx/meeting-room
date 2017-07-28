@@ -117,5 +117,17 @@
       this.user = user
       this.$apply()
     }
+
+    // 分享
+    onShareAppMessage() {
+      return {
+        title: '会议室预订',
+        path: '/pages/home',
+        success: function(res) {
+        },
+        fail: function(res) {
+        }
+      }
+    }
   }
 </script>
