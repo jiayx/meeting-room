@@ -2,6 +2,17 @@
 
 基于 [wepy](https://github.com/wepyjs/wepy)
 
+## 部分效果图
+选择时间段
+
+<img width="300" src="https://raw.githubusercontent.com/jiayx/meeting-room/master/image/image0.jpeg"/>
+
+查看预订信息
+
+<img width="300" src="https://raw.githubusercontent.com/jiayx/meeting-room/master/image/image1.jpeg"/>
+
+
+由于部分敏感信息未处理，目前仅开源客户端代码，如需服务端代码可以发邮件联系。
 
 ## Changelog
 
