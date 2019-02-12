@@ -1,5 +1,8 @@
 ## 会议室预订小程序客户端
 
+> 服务端代码点击[这里](https://github.com/jiayx/meeting-room-server)
+
+
 基于 [wepy](https://github.com/wepyjs/wepy)
 
 ## 部分效果图
@@ -11,8 +14,6 @@
 
 <img width="300" src="https://raw.githubusercontent.com/jiayx/meeting-room/master/image/image1.jpeg"/>
 
-
-服务端代码点击[这里](https://github.com/jiayx/meeting-room-server)
 
 ## Changelog
 
