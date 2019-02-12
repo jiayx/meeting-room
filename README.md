@@ -12,7 +12,7 @@
 <img width="300" src="https://raw.githubusercontent.com/jiayx/meeting-room/master/image/image1.jpeg"/>
 
 
-由于部分敏感信息未处理，目前仅开源客户端代码，如需服务端代码可以发邮件联系。
+服务端代码点击[这里](https://github.com/jiayx/meeting-room-server)
 
 ## Changelog
 
